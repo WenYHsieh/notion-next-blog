@@ -49,7 +49,7 @@ interface CommonBlockFields {
   archived: boolean
   in_trash: boolean
   type: string
-  // children: CommonBlockFields[]
+  children: Block[]
 }
 
 interface ParagraphBlock extends CommonBlockFields {
@@ -228,4 +228,16 @@ export type {
   ISO8601String,
   UUID,
   PageProperties,
+  ParagraphBlock,
+  HeadingBlock,
+  BulletedListItemBlock,
+  NumberedListItemBlock,
+  ToggleBlock,
+  QuoteBlock,
+  DividerBlock,
+  CodeBlock,
+  ImageBlock,
+  TableBlock,
+  TableRowBlock,
+  BookmarkBlock,
 }

@@ -9,7 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.16.7",
+    "@mui/material": "^5.16.7",
     "@notionhq/client": "^2.2.15",
+    "bright": "^0.8.5",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18"
