@@ -30,7 +30,6 @@ const Comment = ({ pageID }: Props) => {
   const handleSubmit = async () => {
     const commentText = commentField.current?.value ?? ''
     if (!commentText) return
-    // console.log({ pageID, commentText: commentField.current?.value })
     await createCommentClient({ page_id: pageID, content: commentText })
   }
   return (
