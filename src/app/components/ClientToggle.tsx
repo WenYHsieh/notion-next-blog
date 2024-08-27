@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { ExpandMore, ExpandLess } from '@mui/icons-material'
 import { IconButton, Typography } from '@mui/material'
 import { Block, ParagraphBlock, ToggleBlock } from '@/service/type'
+import { getPlainTextFromRichText } from '../utils/dataProcessing'
 
 interface ClientToggleProps {
   data: ToggleBlock
@@ -17,7 +18,9 @@ const ClientToggle: React.FC<ClientToggleProps> = ({ data }) => {
       case 'paragraph':
         return (
           <Typography variant='body1'>
-            {(blockData as ParagraphBlock).paragraph.rich_text[0]?.plain_text}
+            {getPlainTextFromRichText(
+              (blockData as ParagraphBlock).paragraph.rich_text,
+            )}
           </Typography>
         )
       default:
@@ -40,7 +43,7 @@ const ClientToggle: React.FC<ClientToggleProps> = ({ data }) => {
           {isOpen ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
         <Typography variant='body1' component='span'>
-          {data.toggle.rich_text[0]?.plain_text}
+          {getPlainTextFromRichText(data.toggle.rich_text)}
         </Typography>
       </div>
       {isOpen && data.children && (

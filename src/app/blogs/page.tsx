@@ -1,8 +1,8 @@
 import { getPages } from '@/service/notion'
-import { Box, Button, Typography } from '@mui/material'
-// import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
+import { Typography } from '@mui/material'
 import Link from 'next/link'
 import ClientPagination from '../components/ClientPagination'
+import { getPlainTextFromRichText } from '../utils/dataProcessing';
 
 const Blogs = async ({
   searchParams,
@@ -10,7 +10,6 @@ const Blogs = async ({
   searchParams: { cursor?: string }
 }) => {
   const cursor = searchParams.cursor || null
-  console.log({ cursor })
   const { pages, next_cursor } = await getPages({
     page_size: 2,
     start_cursor: cursor,
@@ -19,13 +18,21 @@ const Blogs = async ({
     <>
       {' '}
       <main>
-        {pages?.map(({ id, properties }) => {
+        {pages?.map(({ id, properties: {
+          Name,
+          summary,
+          tags,
+          slug,
+          create_date
+        } }) => {
+          const slugText = getPlainTextFromRichText(slug.rich_text)
+          const summaryText = getPlainTextFromRichText(summary.rich_text)
           return (
             <article
               key={id}
               style={{ borderBottom: '1px dashed gray', padding: '16px' }}>
               <Link
-                href={`/blogs/${id}`}
+                href={`/blogs/${slugText}`}
                 style={{
                   borderBottom: '1px solid white',
                   textDecoration: 'none',
@@ -38,11 +45,11 @@ const Blogs = async ({
                       textDecoration: 'underline',
                     },
                   }}>
-                  {properties.Name.title[0].plain_text}
+                  {Name.title[0].plain_text}
                 </Typography>
               </Link>
               <Typography variant='body1'>
-                {properties.summary.rich_text[0].plain_text}
+                {summaryText}
               </Typography>
 
               <div
@@ -59,7 +66,7 @@ const Blogs = async ({
                     padding: 0,
                     margin: 0,
                   }}>
-                  {properties.tags.multi_select.map(({ id, name, color }) => {
+                  {tags.multi_select.map(({ id, name, color }) => {
                     return (
                       <li
                         key={id}
@@ -75,7 +82,7 @@ const Blogs = async ({
                     )
                   })}
                 </ul>
-                <time>{properties.create_date?.date?.start}</time>
+                <time>{create_date?.date?.start}</time>
               </div>
             </article>
           )

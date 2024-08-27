@@ -28,11 +28,8 @@ import {
   TableRowBlock,
 } from '../../service/type'
 import { Code } from 'bright'
-import dynamic from 'next/dynamic'
-
-const ClientToggle = dynamic(() => import('@/app/components/ClientToggle'), {
-  ssr: false,
-})
+import { getPlainTextFromRichText } from './dataProcessing'
+import ClientToggle from '../components/ClientToggle'
 
 const getAnnotationStyle = (annotationItem: RichTextItem['annotations']) => {
   const { bold, italic, strikethrough, underline, color } = annotationItem
@@ -310,19 +307,19 @@ export const renderBlock = (type: string, data: Block) => {
     case 'heading_1':
       return (
         <Typography variant='h1'>
-          {(data as HeadingBlock)[type]?.rich_text[0]?.plain_text}
+          {getPlainTextFromRichText((data as HeadingBlock)[type]!.rich_text)}
         </Typography>
       )
     case 'heading_2':
       return (
         <Typography variant='h2' sx={{ pt: '16px' }}>
-          {(data as HeadingBlock)[type]?.rich_text[0]?.plain_text}
+          {getPlainTextFromRichText((data as HeadingBlock)[type]!.rich_text)}
         </Typography>
       )
     case 'heading_3':
       return (
         <Typography variant='h3'>
-          {(data as HeadingBlock)[type]?.rich_text[0]?.plain_text}
+          {getPlainTextFromRichText((data as HeadingBlock)[type]!.rich_text)}
         </Typography>
       )
     case 'divider':
@@ -333,7 +330,7 @@ export const renderBlock = (type: string, data: Block) => {
           elevation={0}
           sx={{ borderLeft: 4, borderColor: 'gray', pl: 2, my: 2 }}>
           <Typography variant='body1' fontStyle='italic'>
-            {(data as QuoteBlock)[type].rich_text[0]?.plain_text}
+            {getPlainTextFromRichText((data as QuoteBlock)[type]!.rich_text)}
           </Typography>
         </Paper>
       )
@@ -344,7 +341,7 @@ export const renderBlock = (type: string, data: Block) => {
           lang={codeData.language}
           lineNumbers
           style={{ fontSize: '0.9rem' }}>
-          {codeData.rich_text[0]?.plain_text}
+          {getPlainTextFromRichText(codeData.rich_text)}
         </Code>
       )
     case 'image':

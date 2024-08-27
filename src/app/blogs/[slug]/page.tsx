@@ -1,22 +1,28 @@
 import { getPageByID, getPages } from '@/service/notion'
 import { Block, HeadingBlock } from '@/service/type'
-import { Box, Button, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { notFound } from 'next/navigation'
 import renderBlock from '@/app/utils/renderer'
+import Comment from '@/app/components/Comment'
 import { Metadata } from 'next'
-import MenuTwoToneIcon from '@mui/icons-material/MenuTwoTone'
+import { getPlainTextFromRichText } from '@/app/utils/dataProcessing'
+import Outline from '@/app/components/Outline'
 
-// generate post at build time instead of request time
-export async function generateStaticParams() {
-  const { pages } = await getPages({ page_size: 10, start_cursor: null })
+// upper limit: 100 pages within one request -> SSG X 100 & SSR for Other posts, but the result will be cached (React.cache) until next build
+export async function generateStaticParams({
+  params,
+}: {
+  params: { slug: string }
+}) {
+  const { pages } = await getPages({
+    page_size: 2,
+    start_cursor: null,
+    slug: params.slug,
+  })
 
-  return pages.map(({ id }) => ({
-    slug: id,
+  return pages.map(({ properties: { slug } }) => ({
+    slug: getPlainTextFromRichText(slug.rich_text),
   }))
-
-  // return posts.map((post) => ({
-  //   slug: post.id,
-  // }))
 }
 
 export async function generateMetadata({
@@ -24,9 +30,12 @@ export async function generateMetadata({
 }: {
   params: { slug: string }
 }): Promise<Metadata> {
-  const { pages } = await getPages({ page_size: 10, start_cursor: null })
-  const post = pages.find((p) => p.id === params.slug)
-  const title = post?.properties.Name.title[0].plain_text || 'Untitled'
+  const { pages } = await getPages({
+    page_size: 2,
+    start_cursor: null,
+    slug: params.slug,
+  })
+  const title = pages[0]?.properties.Name.title[0].plain_text || 'Untitled'
 
   return {
     title,
@@ -34,10 +43,16 @@ export async function generateMetadata({
 }
 
 const Blog = async ({ params }: { params: { slug: string } }) => {
-  const postID = params.slug
-  const metadata = await generateMetadata({ params })
-  const postTitle = metadata.title as string
-
+  const { pages } = await getPages({
+    page_size: 2,
+    start_cursor: null,
+    slug: params.slug,
+  })
+  const {
+    id: postID,
+    properties: { Name },
+  } = pages[0]
+  const postTitle = Name.title[0].plain_text
   const content = await getPageByID(postID)
   if (!content) notFound()
 
@@ -45,13 +60,17 @@ const Blog = async ({ params }: { params: { slug: string } }) => {
     (acc: { text: string; level: number }[], block) => {
       if (block.type === 'heading_2') {
         acc.push({
-          text: (block as HeadingBlock).heading_2!.rich_text[0].plain_text,
+          text: getPlainTextFromRichText(
+            (block as HeadingBlock).heading_2!.rich_text,
+          ),
           level: 1,
         })
       }
       if (block.type === 'heading_3') {
         acc.push({
-          text: (block as HeadingBlock).heading_3!.rich_text[0].plain_text,
+          text: getPlainTextFromRichText(
+            (block as HeadingBlock).heading_3!.rich_text,
+          ),
           level: 2,
         })
       }
@@ -61,10 +80,9 @@ const Blog = async ({ params }: { params: { slug: string } }) => {
   )
 
   return (
-    // TODO refactor outline
-    // TODO render numbered list item inside the same List
     <Box component='article' sx={{ my: '32px' }}>
       <Box
+        component='header'
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -82,64 +100,18 @@ const Blog = async ({ params }: { params: { slug: string } }) => {
           }}>
           {postTitle}
         </Typography>
-        <Box sx={{ position: 'relative' }}>
-          <Button
-            variant='text'
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              right: 0,
-              transform: 'translateY(-50%)',
-              '&:hover + .outline-box': {
-                display: 'block',
-              },
-              color: 'gray',
-            }}>
-            <MenuTwoToneIcon />
-          </Button>
-          <Box
-            className='outline-box'
-            sx={{
-              display: 'none',
-              position: 'absolute',
-              top: '-8px',
-              right: '-16px',
-              backgroundColor: 'white',
-              boxShadow: '0px 0px 10px rgba(0,0,0,0.1)',
-              padding: '16px',
-              zIndex: 1000,
-              '&:hover': {
-                display: 'block',
-              },
-              width: '250px',
-              maxHeight: '500px',
-              overflowY: 'auto',
-              borderRadius: '5px',
-            }}>
-            <Typography variant='h2' component='h2' sx={{ mb: '16px' }}>
-              Outline
-            </Typography>
-            {outline.map((item, index) => (
-              <Typography
-                key={index}
-                sx={{
-                  ml: item.level === 1 ? 0 : 2,
-                  mb: '8px',
-                  fontSize: item.level === 1 ? '1rem' : '0.9rem',
-                }}>
-                {item.text}
-              </Typography>
-            ))}
-          </Box>
-        </Box>
+        <Outline outline={outline} />
       </Box>
-
+      {/* <time>{create_date?.date?.start}</time> */}
       <main>
-        {content.map(({ id, type, ...blockData }) => (
-          <Box key={id} component='section' sx={{ m: '16px 0' }}>
-            {renderBlock(type, blockData as Block)}
-          </Box>
-        ))}
+        {content.map(({ id, type, ...blockData }) => {
+          return (
+            <Box key={id} component='section' sx={{ m: '16px 0' }}>
+              {renderBlock(type, blockData as Block)}
+            </Box>
+          )
+        })}
+        <Comment pageID={postID} />
       </main>
     </Box>
   )

@@ -147,14 +147,6 @@ interface TableRowBlock extends CommonBlockFields {
   }
 }
 
-interface BookmarkBlock extends CommonBlockFields {
-  type: 'bookmark'
-  bookmark: {
-    caption: RichText
-    url: string
-  }
-}
-
 type Block =
   | ParagraphBlock
   | HeadingBlock
@@ -167,7 +159,6 @@ type Block =
   | ImageBlock
   | TableBlock
   | TableRowBlock
-  | BookmarkBlock
 
 interface PageProperties {
   tags: {
@@ -195,6 +186,11 @@ interface PageProperties {
     type: 'rich_text'
     rich_text: RichText
   }
+  slug: {
+    id: string
+    type: 'rich_text'
+    rich_text: RichText
+  }
 }
 
 interface Page {
@@ -215,10 +211,15 @@ interface Page {
   children: Block[]
 }
 
-type NotionExport = Page[]
+type Database = Page[]
+
+type CreateCommentPayload = {
+  page_id: string
+  content: string
+}
 
 export type {
-  NotionExport,
+  Database,
   Page,
   Block,
   RichText,
@@ -239,5 +240,5 @@ export type {
   ImageBlock,
   TableBlock,
   TableRowBlock,
-  BookmarkBlock,
+  CreateCommentPayload,
 }

@@ -1,34 +1,13 @@
 import { cache } from 'react'
-import { Block, Page } from './type'
-
+import { Block, CreateCommentPayload, Page } from './type'
 const { Client } = require('@notionhq/client')
-import {
-  BlockObjectResponse,
-  PageObjectResponse,
-} from '@notionhq/client/build/src/api-endpoints'
 
 // Initializing a client
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
 })
 
-// export const getBlocks = cache(async (block_id: string) => {
-//   const startTime = Date.now()
-
-//   let { results: children } = await notion.blocks.children.list({ block_id })
-//   for (const child of children) {
-//     const grandchildren = await getBlocks(child.id)
-//     child.children = grandchildren
-//   }
-
-//   const endTime = Date.now()
-//   const executionTime = endTime - startTime
-//   console.log(`getBlocks execution time for ${block_id}: ${executionTime}ms`)
-
-//   return children as Block[]
-// })
-
-// approximately 85.99% reduction in execution time
+// Recursively retrieve all blocks of a page
 export const getBlocks = cache(
   // Depth limitation
   async (block_id: string, depth: number = 0, maxDepth: number = 3) => {
@@ -64,22 +43,42 @@ export const getPageByID = cache(async (pageID: string) => {
   return await getBlocks(pageID)
 })
 
+// Retrieve pages list in the DB
 export const getPages = cache(
   async ({
     page_size,
     start_cursor,
+    slug,
   }: {
     page_size?: number
     start_cursor: string | null
+    slug?: string
   }) => {
     let { results: pages, next_cursor } = await notion.databases.query({
       database_id: process.env.DATABASE_ID,
-      filter: {
-        property: 'is_published',
-        checkbox: {
-          equals: true,
-        },
-      },
+      filter: slug
+        ? {
+            and: [
+              {
+                property: 'is_published',
+                checkbox: {
+                  equals: true,
+                },
+              },
+              {
+                property: 'slug',
+                rich_text: {
+                  equals: slug,
+                },
+              },
+            ],
+          }
+        : {
+            property: 'is_published',
+            checkbox: {
+              equals: true,
+            },
+          },
       sorts: [
         {
           property: 'create_date',
@@ -92,3 +91,21 @@ export const getPages = cache(
     return { pages: pages as Page[], next_cursor }
   },
 )
+
+// Create comment (anonymous)
+export const createComment = async (payload: CreateCommentPayload) => {
+  const { page_id, content } = payload
+  const response = await notion.comments.create({
+    parent: { page_id },
+    rich_text: [{ text: { content } }],
+  })
+  return response
+}
+
+// Retrieve comments of that specific block
+export const getComments = async (block_id: string) => {
+  const response = await notion.comments.list({ block_id })
+  return response
+}
+
+
